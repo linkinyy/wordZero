@@ -556,12 +556,6 @@ func (te *TemplateEngine) renderLoopsNested(content string, lists map[string][]i
 	// 渲染循环
 	if listData, exists := lists[listVar]; exists {
 		for i, item := range listData {
-			// 创建循环上下文变量
-			loopContent := strings.ReplaceAll(blockContent, "{{this}}", te.interfaceToString(item))
-			loopContent = strings.ReplaceAll(loopContent, "{{@index}}", strconv.Itoa(i))
-			loopContent = strings.ReplaceAll(loopContent, "{{@first}}", strconv.FormatBool(i == 0))
-			loopContent = strings.ReplaceAll(loopContent, "{{@last}}", strconv.FormatBool(i == len(listData)-1))
-
 			// 如果item是map，处理属性访问
 			if itemMap, ok := item.(map[string]interface{}); ok {
 				// 首先处理嵌套的循环（在替换变量之前）
@@ -576,7 +570,7 @@ func (te *TemplateEngine) renderLoopsNested(content string, lists map[string][]i
 
 				// 如果有嵌套列表，递归处理嵌套循环
 				if len(nestedLists) > 0 {
-					loopContent = te.renderLoopsNested(loopContent, nestedLists, depth+1)
+					blockContent = te.renderLoopsNested(blockContent, nestedLists, depth+1)
 				}
 
 				// 然后替换普通变量
@@ -584,15 +578,19 @@ func (te *TemplateEngine) renderLoopsNested(content string, lists map[string][]i
 					placeholder := fmt.Sprintf("{{%s}}", key)
 					// 只替换非列表类型的值
 					if _, isList := value.([]interface{}); !isList {
-						loopContent = strings.ReplaceAll(loopContent, placeholder, te.interfaceToString(value))
+						blockContent = strings.ReplaceAll(blockContent, placeholder, te.interfaceToString(value))
 					}
 				}
 
 				// 处理循环内部的条件语句
-				loopContent = te.renderLoopConditionals(loopContent, itemMap)
+				blockContent = te.renderLoopConditionals(blockContent, itemMap)
 			}
 
-			result.WriteString(loopContent)
+			blockContent = strings.ReplaceAll(blockContent, "{{this}}", te.interfaceToString(item))
+			blockContent = strings.ReplaceAll(blockContent, "{{@index}}", strconv.Itoa(i))
+			blockContent = strings.ReplaceAll(blockContent, "{{@first}}", strconv.FormatBool(i == 0))
+			blockContent = strings.ReplaceAll(blockContent, "{{@last}}", strconv.FormatBool(i == len(listData)-1))
+			result.WriteString(blockContent)
 		}
 	}
 
