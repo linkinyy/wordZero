@@ -190,38 +190,11 @@ func (sdt *SDT) AddTOCEntry(text string, level int, pageNum int, entryID string)
 		Runs: []Run{},
 	}
 
-	// 创建内嵌的SDT用于占位符文本
-	placeholderSDT := &SDT{
-		Properties: &SDTProperties{
-			RunPr: &RunProperties{
-				FontFamily: &FontFamily{ASCII: "Calibri"},
-				FontSize:   &FontSize{Val: "22"},
-			},
-			ID: &SDTID{Val: entryID},
-			Placeholder: &SDTPlaceholder{
-				DocPart: &DocPart{Val: generatePlaceholderGUID(level)},
-			},
-			Color: &SDTColor{Val: "509DF3"},
-		},
-		EndPr: &SDTEndPr{
-			RunPr: &RunProperties{
-				FontFamily: &FontFamily{ASCII: "Calibri"},
-				FontSize:   &FontSize{Val: "22"},
-			},
-		},
-		Content: &SDTContent{
-			Elements: []interface{}{
-				Run{
-					Text: Text{Content: text},
-				},
-			},
-		},
+	// 创建标题文本、制表符和页码的Run
+	textRun := Run{
+		Text: Text{Content: text},
 	}
 
-	// 将占位符SDT添加到段落中
-	sdt.Content.Elements = append(sdt.Content.Elements, placeholderSDT)
-
-	// 创建包含制表符和页码的文本Run
 	tabRun := Run{
 		Text: Text{Content: "\t"},
 	}
@@ -230,24 +203,10 @@ func (sdt *SDT) AddTOCEntry(text string, level int, pageNum int, entryID string)
 		Text: Text{Content: fmt.Sprintf("%d", pageNum)},
 	}
 
-	entryPara.Runs = append(entryPara.Runs, tabRun, pageRun)
+	entryPara.Runs = append(entryPara.Runs, textRun, tabRun, pageRun)
 
 	// 添加段落到SDT内容中
 	sdt.Content.Elements = append(sdt.Content.Elements, entryPara)
-}
-
-// generatePlaceholderGUID 生成占位符GUID
-func generatePlaceholderGUID(level int) string {
-	guids := map[int]string{
-		1: "{b5fdec38-8301-4b26-9716-d8b31c00c718}",
-		2: "{a500490c-aaae-4252-8340-aa59729b9870}",
-		3: "{d7310822-77d9-4e43-95e1-4649f1e215b3}",
-	}
-
-	if guid, exists := guids[level]; exists {
-		return guid
-	}
-	return "{b5fdec38-8301-4b26-9716-d8b31c00c718}" // 默认使用1级
 }
 
 // FinalizeTOCSDT 完成目录SDT构建
